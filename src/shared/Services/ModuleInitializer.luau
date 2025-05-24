@@ -21,18 +21,38 @@ local Modules = {
 
 local ModuleInitializer = {}
 
-function ModuleInitializer.InitializeModules(Type: string)
-	for _, Module in Modules[Type] do
-		require(Module.Reference)
-		print("Module Required: " .. Module.Name)
+function ModuleInitializer.InitializeModules(ModuleType: string)
+	for _, Module in Modules[ModuleType] do
+		local Success, Result = pcall(function()
+			return require(Module.Reference)
+		end)
+
+		if Success then
+			print("Module Required: " .. Module.Name)
+
+			-- Check if the module has an Initialize method
+			if typeof(Result) == "table" and typeof(Result.Init) == "function" then
+				local InitSuccess, InitError = pcall(function()
+					Result.Init()
+				end)
+
+				if InitSuccess then
+					print("Initialized module: " .. Module.Name)
+				else
+					warn("Failed to initialize module: " .. Module.Name .. " | Error: " .. tostring(InitError))
+				end
+			end
+		else
+			warn("Failed to require module: " .. Module.Name .. " | Error: " .. tostring(Result))
+		end
 	end
 end
 
-function ModuleInitializer.RetrieveModule(Type: string, Name: string)
-	if not Modules[Type][Name] then
+function ModuleInitializer.RetrieveModule(ModuleType: string, ModuleName: string)
+	if not Modules[ModuleType][ModuleName] then
 		return nil
 	end
-	return require(Modules[Type][Name].Reference)
+	return require(Modules[ModuleType][ModuleName].Reference)
 end
 
 return ModuleInitializer
